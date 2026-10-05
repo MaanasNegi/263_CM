@@ -13,12 +13,27 @@ def temperature_ode(t, T, S, T_deep, a, b):
     return dTdt
 
 def load_benchmark_data(filename):
-    """Read calibration CSV and return (t, T, S_interp)"""
+    """Read benchmark_pen CSV and return (t, T, S_interp)"""
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
 
     t = data[:, 0]
+
+    # convert MJ to J
     solar = 1e6 * data[:,1]
     T = data[:, 2]
+
+    solar_interp = interp1d(t, solar, bounds_error=False, fill_value=(solar[0], solar[-1]))
+    return t, T, solar_interp
+
+def load_sounds_data(filename):
+    """Read salmon_sounds_data CSV and return (t, T, S_interp)"""
+    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+
+    t = data[:, 0]
+
+    # convert MJ to J
+    solar = 1e6 * data[:,2]
+    T = data[:, 5]
 
     solar_interp = interp1d(t, solar, bounds_error=False, fill_value=(solar[0], solar[-1]))
     return t, T, solar_interp
@@ -30,14 +45,14 @@ def solve_temperature_ode(t, solar_interp, a, b, T_deep, T_0=20):
     sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b), t_eval=t)
     return sol.y[0]
 
-def plot_calibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
+def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
     """Plot measured data with ODE model; optionally add a misfit contour map.
 
     Returns (fig, ax) normally, or (fig, (ax1, ax2)) when show_misfit_contour=True.
     """
 
-    filename = 'benchmark_pen.csv'
-    t_data, T_data, solar_interp = load_benchmark_data(filename)
+    filename = 'salmon_sounds_data.csv'
+    t_data, T_data, solar_interp = load_sounds_data(filename)
 
     def misfit_at(ai, bi):
         sol = solve_ivp(temperature_ode, [t_data[0], t_data[-1]], [T_0], args=(solar_interp, T_deep, ai, bi), t_eval=t_data)

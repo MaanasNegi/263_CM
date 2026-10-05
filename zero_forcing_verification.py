@@ -6,11 +6,9 @@ b = 1
 T_deep = 11
 T_0 = 20
 
-# zero forcing function
 zero_forcing_func = lambda t: 0
 
 t = np.linspace(0, 50, 501)
-
 T_model = solve_temperature_ode(t, zero_forcing_func, a, b, T_deep, T_0 = T_0)
 
 """
@@ -18,14 +16,17 @@ replace ... with your solved function for the zero forced ODE
 """
 T_analytical = ...
 
-fig, ax = plt.subplots(1, 1, figsize=(9,6), sharex=True)
+def plot_data():
+    fig, ax = plt.subplots(1, 1, figsize=(9,6), sharex=True)
 
-ax.plot(t, T_model, color = "r", label = "Numerical Solution")
-ax.plot(t, T_analytical, "--" , color="b", label = "Analytical Solution")
-ax.set_xlabel("t")
-ax.set_ylabel("T")
-plt.title("Analytical vs Numerical Solution when S(t) = 0")
-ax.legend()
+    ax.plot(t, T_model, color = "r", label = "Numerical Solution")
+    ax.plot(t, T_analytical, "--" , color="b", label = "Analytical Solution")
+    ax.set_xlabel("t")
+    ax.set_ylabel("T")
+    plt.title("Analytical vs Numerical Solution when S(t) = 0")
+    ax.legend()
 
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()
+
+plot_data()

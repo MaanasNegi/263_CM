@@ -17,11 +17,10 @@ def load_benchmark_data(filename):
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
 
     t = data[:, 0]
-    solar = data[:,1]
+    solar = 1e6 * data[:,1]
     T = data[:, 2]
 
     solar_interp = interp1d(t, solar, bounds_error=False, fill_value=(solar[0], solar[-1]))
-
     return t, T, solar_interp
 
 def solve_temperature_ode(t, solar_interp, a, b, T_deep, T_0=20):
@@ -64,7 +63,6 @@ def plot_calibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
     ax1.set_ylabel('Temperature (°C)')
     ax1.set_title(rf'$\Psi$ = {fmt(misfit)}')
     ax1.legend()
-    plt.show()
 
     if show_misfit_contour:
         # Build log-spaced grid ±1 order of magnitude around (a, b)
@@ -89,5 +87,6 @@ def plot_calibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
         fig.tight_layout()
         return fig, (ax1, ax2)
 
+    plt.show()
     fig.tight_layout()
     return fig, ax1

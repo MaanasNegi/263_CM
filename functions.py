@@ -30,22 +30,23 @@ def load_sounds_data(filename):
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
 
     t = data[:, 0]
+    solar = 1e6 * data[:,2]
+    T = data[:, 5] 
 
     # convert MJ to J
-    solar = 1e6 * data[:,2]
-    T = data[:, 5]
+    data = np.array([t,solar, T])
+    cleaned_data = data[:, ~np.isnan(data).any(axis=0)]
 
-    solar_interp = interp1d(t, solar, bounds_error=False, fill_value=(solar[0], solar[-1]))
-    return t, T, solar_interp
+    solar_interp = interp1d(cleaned_data[0], cleaned_data[1], bounds_error=False, fill_value=(cleaned_data[1][0], cleaned_data[1][-1]))
+    return cleaned_data[0], cleaned_data[2], solar_interp
 
-def solve_temperature_ode(t, solar_interp, a, b, T_deep, T_0=20):
+def solve_temperature_ode(t, solar_interp, a, b, T_deep, T_0=22):
     """Solve the temperature ODE over array t and return the temperature solution."""
 
-    # Filename for calibration data CSV
-    sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b), t_eval=t)
+    sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b), t_eval=t, method="RK45", rtol=1e-6, atol=1e-9)
     return sol.y[0]
 
-def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
+def plot_callibration(a, b, T_deep, T_0=22, show_misfit_contour=False):
     """Plot measured data with ODE model; optionally add a misfit contour map.
 
     Returns (fig, ax) normally, or (fig, (ax1, ax2)) when show_misfit_contour=True.
@@ -56,7 +57,6 @@ def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
 
     def misfit_at(ai, bi):
         sol = solve_ivp(temperature_ode, [t_data[0], t_data[-1]], [T_0], args=(solar_interp, T_deep, ai, bi), t_eval=t_data)
-
         return np.linalg.norm(sol.y[0] - T_data)**2
 
     t_model = np.arange(t_data[0], t_data[-1] + 1, 1)
@@ -70,13 +70,11 @@ def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
 
     # Temperature fit
     ax1.scatter(t_data, T_data, label='Measured', zorder=3)
-    label = f'Model (a={fmt(a)}, b={fmt(b)})'
-    if abs(T_0 - 20) >= 1e-4:
-        label += f', T0={fmt(T_0)}'
+    label = f'Model (a={fmt(a)}, b={fmt(b)}, T_0={fmt(T_0)})'
     ax1.plot(t_model, T_model, label=label, color='tab:orange')
     ax1.set_xlabel('Time (s)')
     ax1.set_ylabel('Temperature (°C)')
-    ax1.set_title(rf'$\Psi$ = {fmt(misfit)}')
+    ax1.set_title(f'Calibrated Time vs Temp model')
     ax1.legend()
 
     if show_misfit_contour:
@@ -90,7 +88,7 @@ def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
         log_PSI = np.log10(PSI)
         cf = ax2.contourf(A, B, log_PSI, levels=20, cmap='viridis')
         ax2.contour(A, B, log_PSI, levels=20, colors='k', linewidths=0.4, alpha=0.4)
-        fig.colorbar(cf, ax=ax2, label=r'$\log_{10}(\Psi)$')
+        fig.colorbar(cf, ax=ax2, label=r'test')
         ax2.plot(a, b, 'rx', markersize=6, zorder=5, label=f'({fmt(a)}, {fmt(b)})')
         ax2.set_xscale('log')
         ax2.set_yscale('log')
@@ -98,10 +96,11 @@ def plot_callibration(a, b, T_deep, T_0=20, show_misfit_contour=True):
         ax2.set_ylabel('b')
         ax2.set_title('Misfit landscape')
         ax2.legend()
-
+        
         fig.tight_layout()
+        plt.show()
         return fig, (ax1, ax2)
 
-    plt.show()
     fig.tight_layout()
+    plt.show()
     return fig, ax1

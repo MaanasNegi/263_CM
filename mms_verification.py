@@ -6,8 +6,13 @@ b = 1
 T_deep = 11
 T_0 = 2
 
+g = 0.1
+mortality = 0
+heat_threshold = 15
+B_0 = 1
+
 """
-replace ... with your derived solar radiation function 
+replace ... with your solar(t) which comes from rearranging dT/dt
 """
 S = ...
 
@@ -31,7 +36,6 @@ def plot_data():
     """
     replace ... with your manufactured solution for S(t)
     """
-
     plt.title("Analytical vs Numerical Solution when S(t) = ... using MMS")
     ax.legend()
 

@@ -12,15 +12,14 @@ density = 1025
 
 a_guess = 1 / (depth * density * specific_heat)
 b_guess = 1 / tau
-p0 = [a_guess / 1e-8, b_guess, T_data[0]]
+p0 = [a_guess, b_guess, T_data[0]]
 
-def callibrating_model(t, a_red, b, T_0):
-    a = a_red * 1e-8
-    sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b),     t_eval=t, method="RK45", rtol=1e-10, atol=1e-13)
+def callibrating_temp_model(t, a, b, T_0):
+    sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b), t_eval=t, method="RK45", rtol=1e-10, atol=1e-13)
     return sol.y[0]
 
-params = curve_fit(callibrating_model, t_data, T_data, p0=p0, bounds=([0, 1e-4, 0], [100, 5, 40]))
+params = curve_fit(callibrating_temp_model, t_data, T_data, p0=p0, bounds=([-5, 1e-4, 0], [5, 5, 40]))
 
-a_red, b, T_0 = params[0] 
-a = a_red * 1e-8
-plot_callibration(a, b, T_deep, T_0=T_0)
+a, b, T_0 = params[0] 
+print(f"a: {a}, b:{b}, T_0:{T_0}")
+plot_callibration(a, b, T_deep, T_0=T_0, show_misfit_contour = False)

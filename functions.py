@@ -12,6 +12,11 @@ def temperature_ode(t, T, S, T_deep, a, b):
     dTdt = a * S(t) - b * (T - T_deep)
     return dTdt
 
+def biomass_ode(t, B, g, T, mortality, heat_threshold, harvest, smolt_stocking):
+    """ODE for stock biomass: dB/dt = g * T * B - mortality * max(T - T_c, 0) * B - h(t) * B + s(t)"""
+    dBdt = g * T(t) * B - mortality * max(T(t) - heat_threshold, 0) * B - harvest(t) * B + smolt_stocking(t)
+    return dBdt
+
 def load_benchmark_data(filename):
     """Read benchmark_pen CSV and return (t, T, S_interp)"""
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
@@ -21,9 +26,10 @@ def load_benchmark_data(filename):
     # convert MJ to J
     solar = 1e6 * data[:,1]
     T = data[:, 2]
+    mass = data[:, 3]
 
     solar_interp = interp1d(t, solar, bounds_error=False, fill_value=(solar[0], solar[-1]))
-    return t, T, solar_interp
+    return t, T, solar_interp, mass
 
 def load_sounds_data(filename):
     """Read salmon_sounds_data CSV and return (t, T, S_interp)"""
@@ -46,6 +52,12 @@ def solve_temperature_ode(t, solar_interp, a, b, T_deep, T_0=22):
     sol = solve_ivp(temperature_ode, [t[0], t[-1]], [T_0], args=(solar_interp, T_deep, a, b), t_eval=t, method="RK45", rtol=1e-6, atol=1e-9)
     return sol.y[0]
 
+def solve_biomass_ode(t, g, T, mortality, heat_threshold, harvest, smolt_stocking, B_0 = 4000):
+    """Solve the temperature ODE over array t and return the temperature solution."""
+
+    sol = solve_ivp(biomass_ode, [t[0], t[-1]], [B_0], args=(g, T, mortality, heat_threshold, harvest, smolt_stocking), t_eval=t, method="RK45", rtol=1e-6, atol=1e-9)
+    return sol.y[0]
+
 def plot_callibration(a, b, T_deep, T_0=22, show_misfit_contour=False):
     """Plot measured data with ODE model; optionally add a misfit contour map.
 
@@ -54,20 +66,10 @@ def plot_callibration(a, b, T_deep, T_0=22, show_misfit_contour=False):
 
     filename = 'salmon_sounds_data.csv'
     t_data, T_data, solar_interp = load_sounds_data(filename)
-
-    def misfit_at(ai, bi):
-        sol = solve_ivp(temperature_ode, [t_data[0], t_data[-1]], [T_0], args=(solar_interp, T_deep, ai, bi), t_eval=t_data)
-        return np.linalg.norm(sol.y[0] - T_data)**2
-
     t_model = np.arange(t_data[0], t_data[-1] + 1, 1)
     T_model = solve_temperature_ode(t_model, solar_interp, a, b, T_deep, T_0=T_0)
-    misfit = misfit_at(a, b)
 
-    if show_misfit_contour:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    else:
-        fig, ax1 = plt.subplots(figsize=(6, 5))
-
+    fig, ax1 = plt.subplots(figsize=(6, 5))
     # Temperature fit
     ax1.scatter(t_data, T_data, label='Measured', zorder=3)
     label = f'Model (a={fmt(a)}, b={fmt(b)}, T_0={fmt(T_0)})'
@@ -76,31 +78,7 @@ def plot_callibration(a, b, T_deep, T_0=22, show_misfit_contour=False):
     ax1.set_ylabel('Temperature (°C)')
     ax1.set_title(f'Calibrated Time vs Temp model')
     ax1.legend()
-
-    if show_misfit_contour:
-        # Build log-spaced grid ±1 order of magnitude around (a, b)
-        n = 100
-        a_vals = np.logspace(np.log10(a) - 1, np.log10(a) + 1, n)
-        b_vals = np.logspace(np.log10(b) - 1, np.log10(b) + 1, n)
-        A, B = np.meshgrid(a_vals, b_vals)
-        PSI = np.vectorize(misfit_at)(A, B)
-
-        log_PSI = np.log10(PSI)
-        cf = ax2.contourf(A, B, log_PSI, levels=20, cmap='viridis')
-        ax2.contour(A, B, log_PSI, levels=20, colors='k', linewidths=0.4, alpha=0.4)
-        fig.colorbar(cf, ax=ax2, label=r'test')
-        ax2.plot(a, b, 'rx', markersize=6, zorder=5, label=f'({fmt(a)}, {fmt(b)})')
-        ax2.set_xscale('log')
-        ax2.set_yscale('log')
-        ax2.set_xlabel('a')
-        ax2.set_ylabel('b')
-        ax2.set_title('Misfit landscape')
-        ax2.legend()
-        
-        fig.tight_layout()
-        plt.show()
-        return fig, (ax1, ax2)
-
+    
     fig.tight_layout()
     plt.show()
     return fig, ax1

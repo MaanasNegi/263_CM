@@ -4,7 +4,7 @@ from functions import *
 a = 1
 b = 1
 T_deep = 11
-T_0 = 2
+T_0 = T_deep
 
 g = 0.1
 mortality = 0
@@ -14,7 +14,7 @@ B_0 = 1
 """
 replace ... with your solar(t) which comes from rearranging dT/dt
 """
-S = ...
+S = lambda t: (np.cos(0.2*t) + 5*b*np.sin(0.2*t)) / a
 
 t = np.linspace(0, 50, 501)
 
@@ -23,7 +23,7 @@ T_model = solve_temperature_ode(t, S, a, b, T_deep, T_0 = T_0)
 """
 replace ... with your manufactured solution for T(t)
 """
-T_analytical = ...
+T_analytical = T_deep + 5*np.sin(0.2*t)
 
 def plot_data():
     fig, ax = plt.subplots(1, 1, figsize=(9,6), sharex=True)
@@ -36,7 +36,7 @@ def plot_data():
     """
     replace ... with your manufactured solution for S(t)
     """
-    plt.title("Analytical vs Numerical Solution when S(t) = ... using MMS")
+    plt.title("Analytical vs Numerical Solution when S(t) = (cos(0.2t) + 5b*sin(0.2t))/a using MMS")
     ax.legend()
 
     plt.tight_layout()

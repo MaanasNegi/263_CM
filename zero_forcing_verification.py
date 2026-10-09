@@ -15,7 +15,7 @@ T_model = solve_temperature_ode(t, zero_forcing_func, a, b, T_deep, T_0 = T_0)
 """
 replace ... with your solved function for the zero forced ODE where solar(t) = 0
 """
-T_analytical = ...
+T_analytical = T_deep + (T_0 - T_deep) * np.exp(-b * t)
 
 def plot_temp_data():
     fig, ax = plt.subplots(1, 1, figsize=(9,6), sharex=True)

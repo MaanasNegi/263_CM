@@ -88,11 +88,12 @@ def plot_temp_callibration(a, b, T_deep, T_0=22):
     T_model = solve_temperature_ode(t_model, solar_interp, a, b, T_deep, T_0=T_0)
 
     fig, ax1 = plt.subplots(figsize=(6, 5))
+
     # Temperature fit
     ax1.scatter(t_data, T_data, label='Measured', zorder=3)
     label = f'Model (a={fmt(a)}, b={fmt(b)}, T_0={fmt(T_0)})'
     ax1.plot(t_model, T_model, label=label, color='tab:orange')
-    ax1.set_xlabel('day')
+    ax1.set_xlabel('Day')
     ax1.set_ylabel('Bay Temperature (°C)')
     ax1.set_title(f'Calibrated Temperature Model')
     ax1.legend()
@@ -118,12 +119,12 @@ def plot_mass_callibration(T, growth, mortality, threshold, B_0=4000):
 
     # Biomass fit
     ax1.scatter(t_data, biomass, label='Measured', zorder=3)
-    label = f'Model (growth={fmt(growth)}, mortality={fmt(mortality)})'
+    label = f'Model (growth={fmt(growth)}, mortality={fmt(mortality)}, B_0={fmt(B_0)})'
 
     ax1.plot(t_model, B_model, label=label, color='tab:orange')
-    ax1.set_xlabel('Time (s)')
+    ax1.set_xlabel('Day')
     ax1.set_ylabel('Biomass (t)')
-    ax1.set_title(f'Calibrated Time vs Mass model')
+    ax1.set_title(f'Calibrated Biomass model')
     ax1.legend()
     
     fig.tight_layout()
